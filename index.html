@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stargazer Quest</title>
+<meta name="description" content="A six-level game about light sources, darkness, constellations over Peru and making a Juegos Florales star card.">
+<meta name="theme-color" content="#0c1130">
+<meta property="og:title" content="Stargazer Quest">
+<meta property="og:description" content="Light up the night sky over Peru with Lumi the llama.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230c1130'/%3E%3Cpath d='M32 8l7 15 16 2-12 11 3 16-14-8-14 8 3-16L9 25l16-2z' fill='%23ffc94a'/%3E%3C/svg%3E">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grandstander:wght@600;800&family=Lexend:wght@400;500;700&display=swap">
+<style>
+/* Layout: one phone-width column over a twinkling Andean night sky; a woven textile band on top; Lumi the llama gives feedback from a fixed bubble at the bottom */
+:root{
+  --night:#0c1130; --night-2:#151c47; --night-3:#222d68; --line:#323e82;
+  --ink:#f8f1e3; --muted:#aeb5df; --on-gold:#2b1a00;
+  --gold:#ffc94a; --gold-deep:#d9971a;
+  --rose:#ff6a8d; --teal:#36cbb7; --orange:#ff9a46;
+  --good:#5fe3a6; --bad:#ff8080;
+  --display:"Grandstander","Trebuchet MS","Comic Sans MS",system-ui,sans-serif;
+  --body:"Lexend","Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--night);color:var(--ink);font:400 16px/1.45 var(--body);-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:disabled{cursor:default}
+button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--teal);outline-offset:3px;border-radius:12px}
+h1,h2,h3{font-family:var(--display);font-weight:800;line-height:1.1;text-wrap:balance;margin:0}
+#sky{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.band{position:relative;z-index:2;height:14px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='14'%3E%3Crect width='24' height='14' fill='%23ff6a8d'/%3E%3Cpath d='M0 12h3V9h3V6h3V3h6v3h3v3h3v3h3v2H0z' fill='%23ffc94a'/%3E%3Cpath d='M12 5l2 2-2 2-2-2z' fill='%2336cbb7'/%3E%3Crect y='12' width='24' height='2' fill='%23151c47'/%3E%3C/svg%3E") repeat-x;background-size:auto 14px}
+.app{position:relative;z-index:1;max-width:480px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 150px}
+
+/* top bars */
+.bar{display:flex;align-items:center;gap:10px;padding-block:14px 10px}
+.icon-btn{width:46px;height:46px;border-radius:14px;background:var(--night-2);border:2px solid var(--line);display:grid;place-items:center;font-size:20px;flex:none}
+.bar-title{flex:1;min-width:0;text-align:center}
+.bar-title small{display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.bar-title b{font-family:var(--display);font-size:22px;font-weight:800}
+.maptop{display:flex;justify-content:flex-end;padding-top:14px}
+
+/* map */
+.hero{text-align:center;margin-top:-18px}
+.hero h1{font-size:clamp(40px,12vw,54px);color:var(--gold);text-shadow:0 0 28px rgba(255,201,74,.4)}
+.hero p{margin:6px 0 0;color:var(--muted)}
+.tally{display:inline-flex;gap:6px;align-items:center;margin-top:12px;padding:6px 16px;border-radius:999px;background:var(--night-2);border:2px solid var(--line);font-weight:700;font-variant-numeric:tabular-nums}
+.tally b{color:var(--gold);font-size:18px}
+.map{width:100%;height:auto;display:block;margin-top:4px;overflow:visible}
+.mapline{stroke:var(--line);stroke-width:3;stroke-dasharray:2 9;stroke-linecap:round}
+.mapline.on{stroke:var(--gold)}
+.node{cursor:pointer;outline:none}
+.node .shape{fill:var(--night-3);stroke:var(--gold);stroke-width:2.5;stroke-linejoin:round;transform-box:fill-box;transform-origin:center;transition:transform .2s}
+.node:hover .shape,.node:focus-visible .shape{transform:scale(1.12)}
+.node:focus-visible .shape{stroke:var(--teal);stroke-width:4}
+.node.won .shape{fill:var(--gold);filter:drop-shadow(0 0 10px rgba(255,201,74,.75))}
+.node .halo{fill:var(--gold);opacity:0;transform-box:fill-box;transform-origin:center}
+.node.next .halo{animation:halo 1.8s ease-in-out infinite}
+.nnum{text-anchor:middle;font:800 19px var(--display);fill:var(--ink);pointer-events:none}
+.node.won .nnum{fill:var(--on-gold)}
+.nlabel{text-anchor:middle;font:700 13.5px var(--body);fill:var(--ink)}
+.nstars{text-anchor:middle;font-size:14px;fill:var(--gold);letter-spacing:2px}
+.cert{margin-top:8px;text-align:center;padding:22px 18px;border-radius:24px;background:var(--night-2);border:3px solid var(--gold)}
+.cert-star{font-size:56px;color:var(--gold);line-height:1;text-shadow:0 0 20px rgba(255,201,74,.7)}
+.cert h2{font-size:30px;color:var(--gold);margin-top:6px}
+.cert p{margin:6px 0 16px}
+
+/* stage basics */
+.task{font-size:24px;text-align:center;margin:2px 0 12px}
+.hl{color:var(--gold)}
+.sub{text-align:center;color:var(--muted);margin:-6px 0 14px;font-size:15px}
+.meter{display:flex;justify-content:center;gap:6px;margin:0 0 14px}
+.meter i{width:24px;height:8px;border-radius:4px;background:var(--line)}
+.meter i.on{background:var(--gold);box-shadow:0 0 8px rgba(255,201,74,.6)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:56px;padding:12px 22px;border-radius:18px;background:var(--gold);color:var(--on-gold);font-family:var(--display);font-weight:800;font-size:20px;box-shadow:0 5px 0 var(--gold-deep);transition:transform .1s,box-shadow .1s}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--gold-deep)}
+.btn.alt{background:var(--night-3);color:var(--ink);box-shadow:0 5px 0 #070a20;border:2px solid var(--line)}
+.btn.wide{width:100%}
+.mt{margin-top:16px}
+
+/* level 1 tiles */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile{aspect-ratio:1;border-radius:20px;background:var(--night-2);border:3px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:var(--muted);transition:background .3s,border-color .3s,box-shadow .3s,opacity .3s}
+.tile .em{font-size:clamp(34px,10vw,46px);line-height:1}
+.tile.lit{background:radial-gradient(circle at 50% 38%,rgba(255,201,74,.6),var(--night-2) 72%);border-color:var(--gold);color:var(--ink);box-shadow:0 0 26px rgba(255,201,74,.5)}
+.tile.no{opacity:.4;border-color:var(--bad)}
+
+/* level 2 torch room */
+.room{position:relative;width:100%;height:min(60vh,520px);min-height:340px;border-radius:22px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;border:3px solid var(--line);background:#e9a35c;cursor:crosshair}
+.room .floor{position:absolute;inset:66% 0 0 0;background:#9b6141}
+.room .win{position:absolute;left:56%;top:7%;width:32%;height:21%;background:#1b2766;border:6px solid #fff0d2;border-radius:8px;box-shadow:inset 0 0 0 2px #1b2766}
+.room .win::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 25% 35%,#fff 1.5px,transparent 2px),radial-gradient(circle at 70% 60%,#fff 1.5px,transparent 2px),radial-gradient(circle at 55% 25%,#ffd76a 2px,transparent 2.5px)}
+.room .bed{position:absolute;left:30%;top:57%;width:44%;height:21%;background:#3e64d8;border-radius:14px 14px 6px 6px;box-shadow:inset 0 16px 0 #f3efe6}
+.room .rug{position:absolute;left:6%;top:83%;width:52%;height:11%;background:#2fbfac;border-radius:50%;box-shadow:inset 0 0 0 6px #ff6a8d}
+.thing{position:absolute;transform:translate(-50%,-50%);font-size:clamp(34px,10vw,44px);line-height:1;transition:transform .3s}
+.thing.found{transform:translate(-50%,-50%) scale(1.25);filter:drop-shadow(0 0 10px #fff6c8)}
+.dark{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle var(--rad,0px) at var(--x,50%) var(--y,50%),rgba(255,236,170,.28) 0,rgba(255,236,170,.1) 55%,rgba(3,5,16,.985) 100%);transition:opacity 1s}
+.dark.off{opacity:0}
+
+/* true / false */
+.card-q{background:var(--ink);color:var(--night);border-radius:22px;padding:24px 20px;font-size:20px;font-weight:500;text-align:center;min-height:140px;display:grid;place-items:center;box-shadow:0 8px 0 rgba(0,0,0,.35)}
+.tf{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.tf button{min-height:92px;border-radius:22px;font-family:var(--display);font-size:24px;font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--night);box-shadow:0 5px 0 rgba(0,0,0,.35);transition:opacity .3s}
+.tf button span{font-size:30px}
+.tf .t{background:var(--teal)}
+.tf .f{background:var(--rose)}
+.tf .right{outline:4px solid var(--good);outline-offset:3px}
+.tf .wrong{opacity:.35}
+.why{margin-top:16px;padding:14px 16px;border-radius:18px;background:var(--night-2);border:2px solid var(--gold)}
+.why b{color:var(--gold);font-family:var(--display);font-size:18px;display:block}
+
+/* sky dot-to-dot */
+.skybox{width:100%;max-width:100%;aspect-ratio:1;display:block;border-radius:22px;background:radial-gradient(circle at 50% 30%,#1f2c74,#090d29 78%);border:3px solid var(--line);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.tiny{fill:#fff;opacity:.55}
+.pt{cursor:pointer;outline:none}
+.pt .hit{fill:transparent}
+.pt .halo{fill:var(--gold);opacity:0;transform-box:fill-box;transform-origin:center}
+.pt.next .halo{animation:pulse 1.1s ease-in-out infinite}
+.pt .core{fill:#ffe9a8;transform-box:fill-box;transform-origin:center}
+.pt.done .core{fill:var(--gold);filter:drop-shadow(0 0 4px rgba(255,201,74,.9))}
+.pt.shake .core{animation:shake .4s}
+.pt:focus-visible .hit{stroke:var(--teal);stroke-width:3}
+.num{fill:var(--ink);font:700 14px var(--body);pointer-events:none}
+.pt.done .num{opacity:.35}
+.ln{stroke:var(--gold);stroke-width:3;stroke-linecap:round;filter:drop-shadow(0 0 4px rgba(255,201,74,.8))}
+.ln.grow{stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:draw .45s ease-out forwards}
+.ln.dash{stroke:var(--orange);stroke-dasharray:7 7;animation:fade .6s ease-out both}
+.ring{fill:none;stroke:var(--teal);stroke-width:2.5;stroke-dasharray:5 5;animation:fade .6s both}
+.sq{fill:rgba(255,201,74,.14);animation:fade .8s both}
+.tagtxt{font:800 16px var(--display);fill:var(--teal);text-anchor:middle;animation:fade .8s both}
+.reveal{margin-top:16px;padding:16px;border-radius:20px;background:var(--night-2);border:2px solid var(--gold);text-align:center}
+.reveal .rv-name{font:800 24px var(--display);color:var(--gold)}
+.reveal p{margin:6px 0 14px}
+
+/* options */
+.riddle{background:var(--ink);color:var(--night);border-radius:22px;padding:22px 20px;font-size:19px;font-weight:500;text-align:center;box-shadow:0 8px 0 rgba(0,0,0,.35)}
+.opts{display:grid;gap:10px;margin-top:16px}
+.opt{display:flex;align-items:center;gap:14px;padding:10px 14px;border-radius:18px;background:var(--night-2);border:3px solid var(--line);text-align:left;font-weight:700;font-size:17px;min-height:68px;transition:border-color .2s,opacity .3s,background .3s}
+.opt.txt{padding:14px 18px}
+.opt.right{border-color:var(--good);background:#173d43}
+.opt.wrong{border-color:var(--bad);opacity:.45}
+.mini{width:52px;height:52px;flex:none;border-radius:14px;background:#090d29}
+.mini line{stroke:var(--gold);stroke-width:9;stroke-linecap:round;opacity:.85}
+.mini line.d{stroke:var(--orange);stroke-dasharray:16 16}
+.mini circle.s{fill:#fff4cf}
+.mini .cring{fill:none;stroke:var(--teal);stroke-width:14}
+.mini .cl{font:800 120px var(--display);fill:var(--ink);text-anchor:middle}
+.qbox{margin-top:18px}
+.qbox h3{font-size:22px;text-align:center}
+
+/* star card */
+.placed,.pool{display:grid;gap:10px}
+.placed:empty{display:none}
+.placed{margin-bottom:14px}
+.step{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:18px;background:var(--ink);color:var(--night);font-weight:500;text-align:left;min-height:66px;width:100%;box-shadow:0 4px 0 rgba(0,0,0,.35)}
+.step .badge{width:36px;height:36px;border-radius:50%;background:var(--night-3);color:var(--ink);display:grid;place-items:center;font:800 18px var(--display);flex:none}
+.step.ok{background:var(--gold);color:var(--on-gold);box-shadow:none}
+.step.ok .badge{background:var(--on-gold);color:var(--gold)}
+.felt{border-radius:26px;padding:22px;background:#2f8457;background-image:radial-gradient(rgba(255,255,255,.07) 1px,transparent 1.5px),radial-gradient(rgba(0,0,0,.12) 1px,transparent 1.5px);background-size:6px 6px,9px 9px;box-shadow:inset 0 0 0 4px #26704a;transition:background-color 1s,box-shadow 1s}
+.felt.lit{background-color:#ffd970;background-image:radial-gradient(circle at 50% 50%,#fff8de 0,#ffd970 45%,#f0a63a 100%);box-shadow:0 0 50px rgba(255,201,74,.7)}
+.blackcard{width:100%;max-width:100%;aspect-ratio:1;display:block;background:#101014;border-radius:6px;box-shadow:0 10px 20px rgba(0,0,0,.45);transition:transform .9s,box-shadow .9s;touch-action:manipulation}
+.felt.lit .blackcard{transform:scale(1.03);box-shadow:0 0 0 2px rgba(255,240,190,.6),0 0 40px rgba(255,230,150,.9)}
+.chalk line{stroke:rgba(255,255,255,.5);stroke-width:2.5;stroke-dasharray:4 6;stroke-linecap:round;transition:opacity 1s}
+.felt.lit .chalk line{opacity:.08}
+.dot{cursor:pointer;outline:none}
+.dot .hit{fill:transparent}
+.dot:focus-visible .hit{stroke:var(--teal);stroke-width:3}
+.dot .wd{fill:#fff;transition:all .3s}
+.dot .hole{fill:#000;opacity:0;transition:fill 1s}
+.dot .glow{fill:var(--gold);opacity:0;transition:opacity 1.2s}
+.dot.poked .wd{fill:none;stroke:rgba(255,255,255,.45);stroke-width:2}
+.dot.poked .hole{opacity:1}
+.felt.lit .dot .wd{opacity:0}
+.felt.lit .dot .hole{fill:#fff8d8}
+.felt.lit .dot .glow{opacity:.7;filter:blur(4px)}
+
+/* Lumi */
+.lumi{position:fixed;left:0;right:0;bottom:0;z-index:5;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:linear-gradient(to top,var(--night) 62%,rgba(12,17,48,0));pointer-events:none}
+.lumi-in{max-width:448px;margin:0 auto;display:flex;gap:10px;align-items:flex-end}
+.lumi-face{font-size:44px;line-height:1;flex:none;filter:drop-shadow(0 4px 8px rgba(0,0,0,.45));transform-origin:bottom center}
+.lumi p{margin:0;flex:1;min-width:0;background:var(--ink);color:var(--night);padding:11px 14px;border-radius:18px 18px 18px 4px;font-size:15px;line-height:1.4;box-shadow:0 6px 20px rgba(0,0,0,.4);border:3px solid var(--ink);pointer-events:auto}
+.lumi.good p{border-color:var(--good)}
+.lumi.bad p{border-color:var(--bad)}
+.lumi.pop .lumi-face{animation:hop .5s}
+
+/* level complete */
+.done{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgba(5,8,24,.8);padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+.done-card{width:100%;max-width:400px;background:var(--night-2);border:3px solid var(--gold);border-radius:28px;padding:24px 20px;text-align:center;animation:pop .45s both}
+.eyebrow{margin:0;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.done-stars{font-size:54px;line-height:1.1;letter-spacing:6px;margin:6px 0}
+.done-stars span{display:inline-block;animation:pop .5s both}
+.done-stars .on{color:var(--gold);text-shadow:0 0 18px rgba(255,201,74,.8)}
+.done-stars .off{color:var(--line)}
+.done-card h2{font-size:28px}
+.fact{margin:14px 0 18px;padding:14px;border-radius:18px;background:var(--night);text-align:left}
+.fact b:first-child{display:block;color:var(--teal);font:800 15px var(--display);letter-spacing:.04em}
+.fact p{margin:4px 0 0}
+.done-btns{display:grid;gap:12px}
+
+.spark{position:fixed;z-index:30;pointer-events:none;font-size:22px;animation:fly 1s ease-out forwards}
+.shake{animation:shake .4s}
+
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+@keyframes hop{30%{transform:translateY(-10px) rotate(-6deg)}60%{transform:translateY(0) rotate(4deg)}}
+@keyframes halo{0%,100%{opacity:0;transform:scale(.8)}50%{opacity:.35;transform:scale(1.25)}}
+@keyframes pulse{0%,100%{opacity:.15;transform:scale(.8)}50%{opacity:.55;transform:scale(1.5)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes fly{to{transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(.3);opacity:0}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.ln.grow{stroke-dashoffset:0}}
+</style>
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="band" aria-hidden="true"></div>
+<div class="app" id="app"></div>
+<div class="lumi" id="lumi"><div class="lumi-in"><span class="lumi-face" aria-hidden="true">🦙</span><p id="say" aria-live="polite"></p></div></div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const app=$('#app');
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const onKey=(el,fn)=>{el.onclick=fn;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fn()}}};
+
+/* progress (per-browser convenience only) */
+let prog={};try{prog=JSON.parse(localStorage.getItem('sq-prog')||'{}')||{}}catch(e){}
+const save=()=>{try{localStorage.setItem('sq-prog',JSON.stringify(prog))}catch(e){}};
+
+/* sound */
+let soundOn=true,ac=null;try{soundOn=localStorage.getItem('sq-snd')!=='0'}catch(e){}
+function tone(fs,d=.14,type='triangle',vol=.16){if(!soundOn)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const t0=ac.currentTime;fs.forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;const t=t0+i*d*.8;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d+.03)})}catch(e){}}
+const sfx={good:()=>tone([660,990]),bad:()=>tone([300,210],.18,'sine',.12),win:()=>tone([523,659,784,1047],.16),tap:()=>tone([720],.07,'sine',.08),star:n=>tone([620+n*80],.12,'sine',.12)};
+function toggleSound(){soundOn=!soundOn;try{localStorage.setItem('sq-snd',soundOn?'1':'0')}catch(e){}const b=$('#snd');if(b){b.textContent=soundOn?'🔊':'🔇';b.setAttribute('aria-label','Turn sound '+(soundOn?'off':'on'))}sfx.tap()}
+const sndBtn=()=>`<button class="icon-btn" id="snd" aria-label="Turn sound ${soundOn?'off':'on'}">${soundOn?'🔊':'🔇'}</button>`;
+
+/* Lumi the llama */
+function say(html,mood){const p=$('#say'),l=$('#lumi');p.innerHTML=html;l.classList.remove('good','bad','pop');void l.offsetWidth;if(mood)l.classList.add(mood);l.classList.add('pop')}
+
+/* sparkle bursts */
+function burst(x,y,n=16){if(RM)return;for(let i=0;i<n;i++){const s=document.createElement('span');s.className='spark';s.textContent=['✦','★','✧'][i%3];const a=Math.random()*6.283,d=60+Math.random()*90;s.style.left=x+'px';s.style.top=y+'px';s.style.color=['var(--gold)','var(--rose)','var(--teal)'][i%3];s.style.setProperty('--dx',Math.cos(a)*d+'px');s.style.setProperty('--dy',Math.sin(a)*d+'px');s.style.setProperty('--rot',(Math.random()*360|0)+'deg');document.body.appendChild(s);setTimeout(()=>s.remove(),1100)}}
+const burstAt=el=>{const r=el.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2)};
+function setMeter(done,n){const m=$('#meter');if(m)m.innerHTML=Array.from({length:n},(_,k)=>`<i class="${k<done?'on':''}"></i>`).join('')}
+function STAR(R,r=R*.48){let d='';for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r:R;d+=(i?'L':'M')+(Math.cos(a)*rr).toFixed(1)+' '+(Math.sin(a)*rr).toFixed(1)}return d+'Z'}
+
+/* constellations: [x, y, connectFrom] in a 300×300 sky */
+const CONS={
+ orion:{name:'Orion the Hunter',short:'Orion',fact:'Look for his <b>belt of three bright stars</b> in a row.',hint:'Can you find Orion’s belt of three stars?',pts:[[95,62],[122,152,0],[150,146,1],[178,140,2],[212,70,3],[100,250,1],[215,240,3]],extra:[[0,4]],belt:1,clue:'He has a belt of three bright stars.'},
+ cross:{name:'The Southern Cross',short:'Southern Cross',fact:'Four bright stars make the cross. The two <b>Pointers</b> point towards it to help travellers find <b>South</b>!',hint:'Join the four stars of the cross, then tap the two Pointers.',pts:[[200,48],[195,242,0],[138,140],[262,150,2],[38,118],[52,206]],dash:[[4,2],[5,2]],south:1,clue:'It has four bright stars and two Pointers.'},
+ cygnus:{name:'Cygnus the Swan',short:'Cygnus',fact:'A graceful swan flying through the stars, with a long neck and wide wings.',hint:'Draw the swan’s long neck, then its wide wings.',pts:[[55,240],[150,150,0],[255,58,1],[95,75],[205,225,3]],clue:'It is a swan.'},
+ pegasus:{name:'Pegasus the Winged Horse',short:'Pegasus',fact:'Find the <b>large square of stars</b>. That is the magical horse’s body!',hint:'Look for the large square of stars.',pts:[[78,122],[190,110,0],[200,220,1],[85,228,2],[245,70,1],[286,96,4],[258,262,2]],extra:[[3,0]],square:1,clue:'It has a big square of stars.'},
+ centaurus:{name:'Centaurus',clue:'It is half human and half horse.',pts:[[150,40],[150,120,0],[95,150,1],[215,155,1],[80,255,2],[125,258,2],[205,258,3],[240,250,3]]},
+ pavo:{name:'Pavo the Peacock',clue:'It is a peacock.',pts:[[150,200],[60,120,0],[100,62,0],[160,48,0],[220,66,0],[255,125,0],[118,268,0]]}
+};
+function mini(key){const c=CONS[key];let s='';const L=(a,b,cl='')=>`<line class="${cl}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;c.pts.forEach(p=>{if(p[2]!=null)s+=L(c.pts[p[2]],p)});(c.extra||[]).forEach(([a,b])=>s+=L(c.pts[a],c.pts[b]));(c.dash||[]).forEach(([a,b])=>s+=L(c.pts[a],c.pts[b],'d'));c.pts.forEach(p=>s+=`<circle class="s" cx="${p[0]}" cy="${p[1]}" r="13"/>`);return `<svg class="mini" viewBox="0 0 300 300" aria-hidden="true">${s}</svg>`}
+
+/* shared multiple-choice question */
+function ask(box,q,opts,onRight,onMiss){
+ opts=shuffle(opts);
+ box.innerHTML=`<div class="qbox"><h3>${q}</h3><div class="opts">${opts.map((o,k)=>`<button class="opt txt" data-k="${k}">${o[0]}</button>`).join('')}</div></div>`;
+ $$('.opt',box).forEach(b=>b.onclick=()=>{const o=opts[b.dataset.k];
+  if(o[1]){$$('.opt',box).forEach(x=>x.disabled=true);b.classList.add('right');sfx.good();burstAt(b);onRight(b)}
+  else{onMiss();b.classList.add('wrong','shake');b.disabled=true;sfx.bad();say(`<b>Not quite.</b> ${o[2]}`,'bad')}});
+ setTimeout(()=>box.scrollIntoView({behavior:RM?'auto':'smooth',block:'center'}),60);
+}
+
+/* levels */
+const LEVELS=[
+ {id:'light',name:'Light Hunt',run:()=>lvLight()},
+ {id:'torch',name:'Torch Explorer',run:()=>lvTorch()},
+ {id:'check',name:'Light Check',run:()=>lvCheck()},
+ {id:'dots',name:'Dot-to-Dot Sky',run:()=>lvDots()},
+ {id:'who',name:'Who Am I?',run:()=>lvWho()},
+ {id:'card',name:'Star Card',run:()=>lvCard()}
+];
+const total=()=>LEVELS.reduce((a,l)=>a+(prog[l.id]||0),0);
+
+function renderMap(){
+ const pos=[[72,62],[240,142],[82,232],[238,322],[82,412],[232,496]];
+ const nextIdx=LEVELS.findIndex(l=>!prog[l.id]), all=nextIdx<0;
+ let lines='',nodes='';
+ for(let i=0;i<pos.length-1;i++)lines+=`<line class="mapline${prog[LEVELS[i].id]?' on':''}" x1="${pos[i][0]}" y1="${pos[i][1]}" x2="${pos[i+1][0]}" y2="${pos[i+1][1]}"/>`;
+ LEVELS.forEach((l,i)=>{const[x,y]=pos[i],s=prog[l.id]||0;nodes+=`<g class="node${s?' won':''}${i===nextIdx?' next':''}" data-i="${i}" transform="translate(${x} ${y})" role="button" tabindex="0" aria-label="Level ${i+1}: ${l.name}${s?', '+s+' of 3 stars':''}"><circle class="halo" r="40"/><path class="shape" d="${STAR(30)}"/><text class="nnum" y="7">${i+1}</text><text class="nlabel" y="52">${l.name}</text><text class="nstars" y="70">${'★'.repeat(s)}${'☆'.repeat(3-s)}</text></g>`});
+ app.innerHTML=`<div class="maptop">${sndBtn()}</div><header class="hero"><h1>Stargazer Quest</h1><p>Light and the night sky over Peru</p><div class="tally"><b>★</b> ${total()} / ${LEVELS.length*3} stars</div></header>
+ <svg class="map" viewBox="0 0 320 580" role="group" aria-label="Sky map with ${LEVELS.length} levels">${lines}${nodes}</svg>
+ ${all?`<div class="cert"><div class="cert-star" aria-hidden="true">★</div><h2>Star Master!</h2><p>You lit up the whole sky over Peru with ${total()} stars.</p><button class="btn alt" id="reset">Play again from the start</button></div>`:''}`;
+ $('#snd').onclick=toggleSound;
+ $$('.node').forEach(n=>onKey(n,()=>{sfx.tap();startLevel(+n.dataset.i)}));
+ if(all)$('#reset').onclick=()=>{prog={};save();renderMap()};
+ say(all?'You did it! You’re a real stargazer. Replay any star to win all 3 ★.':total()===0?'¡Hola! I’m <b>Lumi</b> the llama. Let’s light up every star in the night sky over Peru. Tap star <b>1</b> to start!':`Great stargazing! Tap star <b>${nextIdx+1}</b> to keep going.`);
+ scrollTo(0,0);
+}
+function shell(i){
+ const l=LEVELS[i];
+ app.innerHTML=`<header class="bar"><button class="icon-btn" id="back" aria-label="Back to the sky map">←</button><div class="bar-title"><small>Level ${i+1} of ${LEVELS.length}</small><b>${l.name}</b></div>${sndBtn()}</header><main class="stage" id="stage"></main>`;
+ $('#back').onclick=()=>{sfx.tap();renderMap()};$('#snd').onclick=toggleSound;
+ scrollTo(0,0);return $('#stage');
+}
+function startLevel(i){LEVELS[i].run()}
+function finish(i,miss,fact){
+ const s=miss===0?3:miss<=2?2:1;prog[LEVELS[i].id]=Math.max(prog[LEVELS[i].id]||0,s);save();sfx.win();
+ const last=i===LEVELS.length-1;
+ const d=document.createElement('div');d.className='done';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-label','Level complete');
+ d.innerHTML=`<div class="done-card"><p class="eyebrow">Level ${i+1} complete</p><div class="done-stars" aria-label="${s} of 3 stars">${[0,1,2].map(k=>`<span class="${k<s?'on':'off'}" style="animation-delay:${.15+k*.15}s">★</span>`).join('')}</div><h2>${s===3?'Superstar!':s===2?'Shining bright!':'You did it!'}</h2><div class="fact"><b>Remember</b><p>${fact}</p></div><div class="done-btns">${last?'':'<button class="btn wide" id="nx">Next level →</button>'}<button class="btn wide${last?'':' alt'}" id="mp">Back to the sky map</button></div></div>`;
+ document.body.appendChild(d);burst(innerWidth/2,innerHeight/3,26);
+ say(s===3?'Wow, no mistakes! ★★★':'Well done! Play again any time to win more stars.','good');
+ const nx=$('#nx',d),mp=$('#mp',d);
+ if(nx)nx.onclick=()=>{d.remove();startLevel(i+1)};
+ mp.onclick=()=>{d.remove();renderMap()};(nx||mp).focus();
+}
+
+/* twinkling sky with Andes silhouette */
+(function(){const c=$('#sky'),x=c.getContext('2d');let W,H,stars=[],back=[],front=[];
+ const gold=cssv('--gold'),m1=cssv('--night-2'),m2=cssv('--night-3');
+ function ridge(n,lo,hi){const p=[];for(let i=0;i<=n;i++)p.push([i*W/n,H-(lo+Math.random()*(hi-lo))]);return p}
+ function size(){const dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0);
+  stars=Array.from({length:Math.round(W*H/4500)},()=>({x:Math.random()*W,y:Math.random()*H*.82,r:Math.random()*1.3+.3,p:Math.random()*6.28,s:.4+Math.random()*1.4}));
+  back=ridge(7,90,170);front=ridge(5,40,90)}
+ function fillRidge(p,col){x.fillStyle=col;x.beginPath();x.moveTo(0,H);p.forEach(q=>x.lineTo(q[0],q[1]));x.lineTo(W,H);x.closePath();x.fill()}
+ function draw(t){x.clearRect(0,0,W,H);for(const s of stars){x.globalAlpha=RM?.7:.3+.7*Math.abs(Math.sin(s.p+t/1000*s.s));x.fillStyle=s.r>1.35?gold:'#ffffff';x.beginPath();x.arc(s.x,s.y,s.r,0,6.283);x.fill()}
+  x.globalAlpha=.9;fillRidge(back,m2);x.globalAlpha=1;fillRidge(front,m1);if(!RM)requestAnimationFrame(draw)}
+ addEventListener('resize',()=>{size();if(RM)draw(0)});size();RM?draw(0):requestAnimationFrame(draw)})();
+
+/* 1 — Light Hunt */
+function lvLight(){
+ const st=shell(0),need=4;let found=0,miss=0;
+ const items=shuffle([
+  ['☀️','The Sun',1,'The Sun is our natural daytime light source.'],
+  ['🔦','Torch',1,'A torch uses batteries to make its own light.'],
+  ['💡','Light bulb',1,'Light bulbs brighten up our homes.'],
+  ['🕯️','Candle',1,'A candle flame makes its own light.'],
+  ['🧸','Teddy',0,'A teddy can’t make light. We only see it when light shines on it.'],
+  ['🦙','Llama',0,'Llamas are fluffy, but they don’t glow!'],
+  ['📕','Book',0,'A book doesn’t make light. You need a lamp to read it at night.'],
+  ['🪨','Rock',0,'A rock can’t make its own light.'],
+  ['🧦','Sock',0,'Socks keep feet warm, but they don’t make light.']]);
+ st.innerHTML=`<h2 class="task">Tap every <span class="hl">light source</span></h2><div class="meter" id="meter"></div><div class="grid3">${items.map((it,k)=>`<button class="tile" data-k="${k}"><span class="em" aria-hidden="true">${it[0]}</span>${it[1]}</button>`).join('')}</div>`;
+ setMeter(0,need);
+ say('A <b>light source</b> makes its own light so that we can see. Can you find all 4?');
+ $$('.tile',st).forEach(b=>b.onclick=()=>{
+  const it=items[b.dataset.k];if(b.classList.contains('lit')||b.classList.contains('no'))return;
+  if(it[2]){b.classList.add('lit');found++;setMeter(found,need);sfx.good();burstAt(b);say(`<b>Yes!</b> ${it[3]}${found<need?` ${need-found} more to find.`:''}`,'good');
+   if(found===need)setTimeout(()=>finish(0,miss,'A <b>light source</b> makes its own light. The Sun, torches, light bulbs and candles are all light sources.'),1000)}
+  else{miss++;b.classList.add('no','shake');sfx.bad();say(`<b>Not a light source.</b> ${it[3]}`,'bad');setTimeout(()=>b.classList.remove('shake'),450)}
+ });
+}
+
+/* 2 — Torch Explorer */
+function lvTorch(){
+ const st=shell(1);let on=false,found=0,miss=0;
+ const things=[['🧸','teddy',22,77],['🦙','toy llama',84,82],['🚀','rocket',20,22],['📚','pile of books',86,52]];
+ st.innerHTML=`<h2 class="task">Light up the <span class="hl">dark room</span></h2><div class="meter" id="meter"></div>
+ <div class="room" id="room" tabindex="0" aria-label="A dark bedroom. Drag, or use the arrow keys, to move the torch beam.">
+  <div class="floor"></div><div class="win"></div><div class="bed"></div><div class="rug"></div>
+  ${things.map(t=>`<span class="thing" data-n="${t[1]}" style="left:${t[2]}%;top:${t[3]}%" aria-hidden="true">${t[0]}</span>`).join('')}
+  <div class="dark" id="dark"></div>
+ </div>
+ <button class="btn wide mt" id="on">🔦 Switch on the torch</button><div id="after"></div>`;
+ setMeter(0,4);
+ const room=$('#room',st),dark=$('#dark',st);
+ const R=()=>Math.max(72,room.clientWidth*.22);
+ let px=room.clientWidth/2,py=room.clientHeight/2;
+ function place(x,y){px=Math.max(0,Math.min(room.clientWidth,x));py=Math.max(0,Math.min(room.clientHeight,y));dark.style.setProperty('--x',px+'px');dark.style.setProperty('--y',py+'px');if(on)check()}
+ function check(){$$('.thing',room).forEach(t=>{if(t.classList.contains('found'))return;
+  if(Math.hypot(t.offsetLeft-px,t.offsetTop-py)<R()*.55){t.classList.add('found');found++;setMeter(found,4);sfx.good();
+   say(`You found the <b>${t.dataset.n}</b>! It was there all along. We just needed light to see it.${found<4?` ${4-found} more to go.`:''}`,'good');
+   if(found===4){on=false;setTimeout(quiz,1000)}}})}
+ const pt=e=>{const r=room.getBoundingClientRect();place(e.clientX-r.left,e.clientY-r.top)};
+ room.addEventListener('pointerdown',e=>{if(!on)return;try{room.setPointerCapture(e.pointerId)}catch(_){}pt(e)});
+ room.addEventListener('pointermove',e=>{if(on&&(e.pointerType==='mouse'||e.buttons))pt(e)});
+ room.addEventListener('keydown',e=>{if(!on)return;const k={ArrowLeft:[-24,0],ArrowRight:[24,0],ArrowUp:[0,-24],ArrowDown:[0,24]}[e.key];if(k){e.preventDefault();place(px+k[0],py+k[1])}});
+ place(px,py);
+ say('It’s night and the lights are off. Can you see any colours or shapes? <b>No!</b> Without light, our eyes can’t see. Switch on the torch.');
+ $('#on',st).onclick=()=>{on=true;dark.style.setProperty('--rad',R()+'px');$('#on',st).hidden=true;sfx.tap();place(px,py);room.focus({preventScroll:true});
+  say('Click! Now drag your finger around the room to shine the torch. Find <b>4</b> hidden things.')};
+ function quiz(){dark.classList.add('off');say('Lights on! Now you can see all the colours. One last question…');
+  ask($('#after',st),'So, what is darkness?',[
+   ['What happens when there is no light',1],
+   ['Black fog that fills up the room',0,'Darkness isn’t fog. It’s not a thing you can touch or catch.'],
+   ['A shadow monster under the bed',0,'No monsters here! Darkness is just what happens when there’s no light.']],
+   ()=>{say('<b>Exactly!</b> Darkness is just the absence of light.','good');setTimeout(()=>finish(1,miss,'Darkness is just the <b>absence of light</b>. Without a bulb, a torch or the Sun, our eyes can’t see colours or shapes.'),1100)},
+   ()=>miss++)}
+}
+
+/* 3 — Light Check (true or false) */
+function lvCheck(){
+ const st=shell(2);let i=0,miss=0;
+ const Q=shuffle([
+  ['Darkness is made of black fog that fills up the night room.',0,'Darkness is simply what happens when there is no light shining.'],
+  ['A light source makes its own light.',1,'The Sun, a torch and a light bulb all make their own light.'],
+  ['When the Sun sets behind the mountains, the sky gets dark.',1,'The Sun is our daytime light source. When it sets, its light goes away and night comes.'],
+  ['You can catch darkness in a jar.',0,'Darkness is not a thing you can touch or catch. It is just no light.'],
+  ['In total darkness, our eyes can still see colours and shapes.',0,'Without a bulb, a torch or the Sun, our eyes cannot see colours or shapes.'],
+  ['A teddy bear is a light source.',0,'A teddy can’t make its own light. We see it when light shines on it.']]);
+ function show(){
+  const q=Q[i];let locked=false;
+  st.innerHTML=`<h2 class="task">True or false?</h2><div class="meter" id="meter"></div><div class="card-q">${q[0]}</div><div class="tf"><button class="t" data-v="1"><span aria-hidden="true">👍</span>TRUE</button><button class="f" data-v="0"><span aria-hidden="true">👎</span>FALSE</button></div><div id="why"></div>`;
+  setMeter(i,Q.length);
+  say(i===0?'Read it carefully. Is it true or false? Be ready to explain your thinking!':`Question ${i+1} of ${Q.length}. True or false?`);
+  $$('.tf button',st).forEach(b=>b.onclick=()=>{if(locked)return;
+   if(+b.dataset.v===q[1]){locked=true;b.classList.add('right');$$('.tf button',st).forEach(x=>x!==b&&x.classList.add('wrong'));sfx.good();burstAt(b);setMeter(i+1,Q.length);
+    $('#why',st).innerHTML=`<div class="why"><b>Why is that?</b>${q[2]}</div><button class="btn wide mt" id="nx">${i<Q.length-1?'Next question →':'Finish'}</button>`;
+    say(`<b>Correct!</b> It’s ${q[1]?'TRUE':'FALSE'}.`,'good');
+    const nx=$('#nx',st);nx.onclick=()=>{i++;i<Q.length?show():finish(2,miss,'Darkness is not a thing. It’s what happens when there is <b>no light</b>.')};
+    setTimeout(()=>nx.scrollIntoView({behavior:RM?'auto':'smooth',block:'center'}),60)}
+   else{miss++;b.classList.add('wrong','shake');b.disabled=true;sfx.bad();say('<b>Hmm, think again!</b> Read the sentence one more time.','bad')}
+  });
+ }
+ show();
+}
+
+/* 4 — Dot-to-Dot Sky */
+function lvDots(){
+ const st=shell(3),order=['orion','cross','cygnus','pegasus'];let ci=0,miss=0;
+ function play(){
+  const key=order[ci],c=CONS[key];let next=0;
+  const bg=Array.from({length:45},()=>`<circle class="tiny" cx="${(Math.random()*300).toFixed(1)}" cy="${(Math.random()*300).toFixed(1)}" r="${(Math.random()*1.1+.3).toFixed(2)}"/>`).join('');
+  const pts=c.pts.map((p,i)=>{const right=p[0]>235,lx=right?-15:15,ly=p[1]<40?24:-11;
+   return `<g class="pt${i===0?' next':''}" data-i="${i}" transform="translate(${p[0]} ${p[1]})" tabindex="0" role="button" aria-label="Star ${i+1}"><circle class="hit" r="22"/><circle class="halo" r="15"/><path class="core" d="${STAR(9)}"/><text class="num" x="${lx}" y="${ly}" text-anchor="${right?'end':'start'}">${i+1}</text></g>`}).join('');
+  st.innerHTML=`<h2 class="task">Join the stars: <span class="hl">${c.short}</span></h2><p class="sub">Star picture ${ci+1} of ${order.length} · tap the stars in number order</p><div class="meter" id="meter"></div>
+  <svg class="skybox" id="sb" viewBox="0 0 300 300" role="group" aria-label="Star dots for ${c.short}">${bg}<g id="under"></g><g id="lines"></g>${pts}</svg><div id="after"></div>`;
+  setMeter(ci,order.length);
+  say(ci===0?`Long ago, stargazers in Peru joined the stars like a <b>dot-to-dot</b> puzzle. ${c.hint}`:c.hint);
+  const lines=$('#lines',st),under=$('#under',st),sb=$('#sb',st);
+  const line=(a,b,cls='ln grow')=>lines.insertAdjacentHTML('beforeend',`<line class="${cls}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" style="--len:${Math.hypot(b[0]-a[0],b[1]-a[1]).toFixed(1)}"/>`);
+  $$('.pt',st).forEach(g=>onKey(g,()=>{
+   const i=+g.dataset.i;if(g.classList.contains('done')||next>=c.pts.length)return;
+   if(i!==next){miss++;sfx.bad();g.classList.add('shake');setTimeout(()=>g.classList.remove('shake'),420);say(`Oops! Look for star number <b>${next+1}</b>.`,'bad');return}
+   g.classList.add('done');g.classList.remove('next');sfx.star(i);
+   const p=c.pts[i];if(p[2]!=null)line(c.pts[p[2]],p);
+   next++;
+   if(next<c.pts.length)$(`.pt[data-i="${next}"]`,st).classList.add('next');else reveal();
+  }));
+  function reveal(){
+   (c.extra||[]).forEach(([a,b])=>line(c.pts[a],c.pts[b]));
+   (c.dash||[]).forEach(([a,b])=>line(c.pts[a],c.pts[b],'ln dash'));
+   if(c.belt)under.innerHTML=`<ellipse class="ring" cx="150" cy="146" rx="48" ry="19" transform="rotate(-12 150 146)"/><text class="tagtxt" x="150" y="190">belt</text>`;
+   if(c.square)under.innerHTML=`<polygon class="sq" points="78,122 190,110 200,220 85,228"/><text class="tagtxt" x="139" y="172">square</text>`;
+   if(c.south)under.innerHTML=`<text class="tagtxt" x="196" y="286">↓ South</text><text class="tagtxt" x="45" y="245">Pointers</text>`;
+   setMeter(ci+1,order.length);
+   setTimeout(()=>{sfx.win();burstAt(sb)},350);
+   $('#after',st).innerHTML=`<div class="reveal"><div class="rv-name">${c.name}</div><p>${c.fact}</p><button class="btn wide" id="nx">${ci<order.length-1?'Next star picture →':'Finish'}</button></div>`;
+   say(`You drew <b>${c.name}</b>! Star pictures like this are called <b>constellations</b>.`,'good');
+   const nx=$('#nx',st);nx.onclick=()=>{ci++;ci<order.length?play():finish(3,miss,'Ancient stargazers in Peru joined the stars like a <b>dot-to-dot</b> puzzle. These star pictures are called <b>constellations</b>.')};
+   setTimeout(()=>nx.scrollIntoView({behavior:RM?'auto':'smooth',block:'end'}),400);
+  }
+ }
+ play();
+}
+
+/* 5 — Who Am I? */
+function lvWho(){
+ const st=shell(4);let i=0,miss=0;
+ const DIR={N:'North',S:'South',E:'East'};
+ const Q=[...shuffle([
+  ['Look for my belt of three bright stars.','orion',['orion','pegasus','cygnus']],
+  ['I am half human and half horse.','centaurus',['pegasus','centaurus','pavo']],
+  ['I am a proud bird with a starry tail.','pavo',['cygnus','pavo','orion']],
+  ['I am a magical winged horse. Find my large square of stars!','pegasus',['centaurus','cygnus','pegasus']],
+  ['I am a graceful swan flying in the stars.','cygnus',['cygnus','pavo','cross']],
+  ['Four bright stars make my shape, and two Pointers point at me. You can spot me on clear nights in Peru!','cross',['orion','cross','pegasus']]]),
+  ['Star Hunter Challenge! The Southern Cross and its Pointers help travellers find which way?','S',['N','S','E']]];
+ const icon=k=>k.length===1?`<svg class="mini" viewBox="0 0 300 300" aria-hidden="true"><circle class="cring" cx="150" cy="150" r="115"/><text class="cl" x="150" y="192">${k}</text></svg>`:mini(k);
+ const label=k=>k.length===1?DIR[k]:CONS[k].name;
+ function show(){
+  const q=Q[i],opts=shuffle(q[2]);let locked=false;
+  st.innerHTML=`<h2 class="task">${q[1].length===1?'Find the way':'Who am I?'}</h2><div class="meter" id="meter"></div><div class="riddle">${q[0]}</div><div class="opts">${opts.map(k=>`<button class="opt" data-k="${k}">${icon(k)}<span>${label(k)}</span></button>`).join('')}</div><div id="after"></div>`;
+  setMeter(i,Q.length);
+  say(i===0?'Read the clue, then pick the star picture it describes.':q[1].length===1?'Last one! Think about what the Pointers are for.':'Which star picture is it?');
+  $$('.opt',st).forEach(b=>b.onclick=()=>{if(locked)return;const k=b.dataset.k;
+   if(k===q[1]){locked=true;b.classList.add('right');sfx.good();burstAt(b);setMeter(i+1,Q.length);
+    say(k.length===1?'<b>Yes, South!</b> The Pointers point to the Cross, and the Cross helps travellers find South.':`<b>Yes!</b> It’s ${CONS[k].name}.`,'good');
+    $('#after',st).innerHTML=`<button class="btn wide mt" id="nx">${i<Q.length-1?'Next clue →':'Finish'}</button>`;
+    const nx=$('#nx',st);nx.onclick=()=>{i++;i<Q.length?show():finish(4,miss,'Constellations are star pictures. The <b>Southern Cross</b> and its two <b>Pointers</b> help travellers in Peru find <b>South</b>.')};
+    setTimeout(()=>nx.scrollIntoView({behavior:RM?'auto':'smooth',block:'center'}),60)}
+   else{miss++;b.classList.add('wrong','shake');b.disabled=true;sfx.bad();
+    say(k.length===1?'Not that way. Travellers use the Southern Cross to find <b>South</b>.':`That’s ${CONS[k].name}. ${CONS[k].clue} Try again!`,'bad')}
+  });
+ }
+ show();
+}
+
+/* 6 — Juegos Florales star card */
+function lvCard(){
+ const st=shell(5);let miss=0,next=0;
+ const STEPS=['Place your thick black card flat on a soft felt pad.','Draw your mythical creature and mark star dots in white.','Carefully push your needle through each dot, safely into the felt.','Hold your card up to the light to see it shine!'];
+ const HINT=['Start by getting your black card ready on the soft felt pad.','Next, draw your creature and mark the star dots, so you know where to poke.','Not yet! Poke the pinholes first. Without holes, no light can shine through.','Hold it up to the light!'];
+ function order(){
+  st.innerHTML=`<h2 class="task">Make a <span class="hl">glowing star card</span></h2><p class="sub">For the Juegos Florales festival! Tap the steps in the right order.</p><div class="placed" id="placed"></div><div class="pool">${shuffle(STEPS.map((t,k)=>[t,k])).map(([t,k])=>`<button class="step" data-i="${k}"><span class="badge">?</span><span>${t}</span></button>`).join('')}</div>`;
+  say('Let’s make a star card for the festival! Which step comes <b>first</b>?');
+  $$('.step',st).forEach(b=>b.onclick=()=>{const k=+b.dataset.i;if(b.disabled)return;
+   if(k===next){sfx.good();b.disabled=true;b.classList.add('ok');$('.badge',b).textContent=k+1;$('#placed',st).appendChild(b);next++;
+    if(next<4)say(`<b>Step ${next} done!</b> What comes next?`,'good');else{say('<b>Perfect order!</b> Now let’s make one.','good');setTimeout(pick,1200)}}
+   else{miss++;sfx.bad();b.classList.add('shake');setTimeout(()=>b.classList.remove('shake'),420);say(`<b>Not yet!</b> ${HINT[next]}`,'bad')}
+  });
+ }
+ function pick(){
+  st.innerHTML=`<h2 class="task">Choose your creature</h2><p class="sub">Your black card is on the felt pad. Which star picture will you draw?</p><div class="opts">${['pegasus','cygnus','cross','pavo','centaurus'].map(k=>`<button class="opt" data-k="${k}">${mini(k)}<span>${CONS[k].name}</span></button>`).join('')}</div>`;
+  say('Pick a star picture for your card. I’ve marked the star dots in white for you.');scrollTo(0,0);
+  $$('.opt',st).forEach(b=>b.onclick=()=>{sfx.tap();make(b.dataset.k)});
+ }
+ function make(key){
+  const c=CONS[key];let poked=0;const n=c.pts.length;
+  const L=(a,b)=>`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;let chalk='';
+  c.pts.forEach(p=>{if(p[2]!=null)chalk+=L(c.pts[p[2]],p)});(c.extra||[]).forEach(([a,b])=>chalk+=L(c.pts[a],c.pts[b]));
+  st.innerHTML=`<h2 class="task">Poke the <span class="hl">pinholes</span></h2><div class="meter" id="meter"></div><div class="felt" id="felt"><svg class="blackcard" viewBox="0 0 300 300" role="group" aria-label="Black card with white star dots"><g class="chalk">${chalk}</g>${c.pts.map((p,k)=>`<g class="dot" data-i="${k}" tabindex="0" role="button" aria-label="Star dot ${k+1}" transform="translate(${p[0]} ${p[1]})"><circle class="hit" r="22"/><circle class="glow" r="11"/><circle class="wd" r="7"/><circle class="hole" r="4"/></g>`).join('')}</svg></div><div id="after"></div>`;
+  setMeter(0,n);scrollTo(0,0);
+  say('Tap each white dot to poke a pinhole. <b>In real life, ask a grown-up to help you with the needle!</b>');
+  const felt=$('#felt',st);
+  $$('.dot',st).forEach(g=>onKey(g,()=>{if(g.classList.contains('poked'))return;g.classList.add('poked');poked++;setMeter(poked,n);sfx.star(poked);
+   if(poked<n)say(`Poke! ${n-poked} more to go.`);
+   else{say('All the holes are done. Now hold your card up to the light!','good');
+    $('#after',st).innerHTML=`<button class="btn wide mt" id="lt">✨ Hold it up to the light</button>`;const lt=$('#lt',st);lt.onclick=light;lt.scrollIntoView({behavior:RM?'auto':'smooth',block:'center'})}}));
+  function light(){felt.classList.add('lit');sfx.win();setTimeout(()=>burstAt(felt),500);
+   say('Wow! Your star card shines like the night sky!','good');
+   setTimeout(()=>ask($('#after',st),'Why do the little holes shine?',[
+    ['Light passes through the holes',1],
+    ['The holes make their own light',0,'The holes aren’t a light source. The light comes from behind the card.'],
+    ['The black card glows in the dark',0,'The black card blocks the light. Only the holes let it through.']],
+    ()=>{say('<b>Yes!</b> Light passes through the holes. The black card blocks it everywhere else.','good');setTimeout(()=>finish(5,miss,'Light shines through the pinholes. The black card blocks the light, so everything else stays dark, just like stars in the night sky!'),1200)},
+    ()=>miss++),1300)}
+ }
+ order();
+}
+
+renderMap();
+</script>
+</body>
+</html>
